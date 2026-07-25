@@ -1,0 +1,55 @@
+# KoDoc 전체 스택: API 서버 + vLLM(LLM) + vLLM(VLM)
+# GPU 2장 기준 예시. 1장이라면 VLM 서비스를 내리고 LLM만 띄워도 API는 동작한다
+# (문서 파싱 기능만 비활성).
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "9000:9000"
+    environment:
+      KODOC_LLM_BASE_URL: http://llm:8000/v1
+      KODOC_LLM_MODEL: Qwen/Qwen2.5-7B-Instruct-AWQ
+      KODOC_VLM_BASE_URL: http://vlm:8000/v1
+      KODOC_VLM_MODEL: Qwen/Qwen2.5-VL-7B-Instruct
+      KODOC_EMBEDDER: hash   # bge-m3 사용 시 이미지에 embeddings extra 포함 필요
+    depends_on:
+      - llm
+
+  llm:
+    image: vllm/vllm-openai:latest
+    command: >
+      --model Qwen/Qwen2.5-7B-Instruct-AWQ
+      --max-model-len 8192
+      --gpu-memory-utilization 0.90
+      --enable-prefix-caching
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+
+  vlm:
+    image: vllm/vllm-openai:latest
+    command: >
+      --model Qwen/Qwen2.5-VL-7B-Instruct
+      --max-model-len 12288
+      --gpu-memory-utilization 0.90
+      --limit-mm-per-prompt '{"image": 1}'
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["1"]
+              capabilities: [gpu]
+
+volumes:
+  hf_cache:

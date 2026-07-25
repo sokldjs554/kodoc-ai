@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# 환경/시크릿
+.env
+
+# 인덱스/산출물
+index/
+*.npy
+benchmarks/results/
+.pytest_cache/
+.ruff_cache/
+
+# OS/에디터
+.DS_Store
+.idea/
+.vscode/
