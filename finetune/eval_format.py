@@ -27,7 +27,9 @@ import json
 import re
 from pathlib import Path
 
-from kodoc.llm.client import LLMClient, LLMError
+# kodoc.llm.client는 --pred-file 경로에서 쓰지 않는다. 여기서 임포트하면 채점만
+# 하려는 환경(Kaggle 노트북 등)에서 패키지 설치를 강요하게 되므로 run() 안으로
+# 미룬다. 채점 자체는 표준 라이브러리와 정규식만으로 돌아간다.
 
 REFUSAL_MARKERS = ("찾을 수 없습니다", "찾을수 없습니다", "확인할 수 없습니다")
 CITE = re.compile(r"\[(\d+)\]")
@@ -61,9 +63,9 @@ def score_one(answer: str, n_chunks: int, gold: list[str] | None, unanswerable: 
     return out
 
 
-async def run(
-    client: LLMClient, rows: list[dict], max_tokens: int, temperature: float | None
-) -> list[str]:
+async def run(client, rows: list[dict], max_tokens: int, temperature: float | None) -> list[str]:
+    from kodoc.llm.client import LLMError
+
     answers = []
     for i, row in enumerate(rows, start=1):
         messages = [m for m in row["messages"] if m["role"] != "assistant"]
@@ -153,6 +155,8 @@ async def main() -> None:
         print(f"채점 {len(rows)}건 / 예측 파일 {args.pred_file}")
     else:
         print(f"평가 {len(rows)}건 / 모델 {args.model}")
+        from kodoc.llm.client import LLMClient
+
         client = LLMClient(base_url=args.base_url, model=args.model, api_key=args.api_key)
         try:
             temp = None if args.no_temperature else args.temperature
