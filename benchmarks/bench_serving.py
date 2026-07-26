@@ -20,6 +20,10 @@ FP16 vs AWQ 같은 비교는 서버만 바꿔 띄우고 같은 명령을 다시 
 주의: 토큰 수는 SSE 델타 청크 수로 근사한다(vLLM은 기본적으로 토큰 단위로
 스트리밍). 정확한 토큰 수가 필요하면 응답의 usage 필드를 지원하는 서버에서
 --use-usage 옵션을 켠다.
+
+--output으로 저장하는 JSON에는 GPU/드라이버/vLLM·torch 버전을 자동 수집해
+함께 기록한다. 환경 정보 없는 벤치마크 수치는 해석도 재현도 불가능하기 때문에,
+사람이 따로 적어 넣는 데 의존하지 않는다. (API 키는 저장에서 제외한다.)
 """
 
 from __future__ import annotations
@@ -27,9 +31,12 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import platform
 import statistics
+import subprocess
 import time
 from dataclasses import dataclass, field
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 import httpx
@@ -69,20 +76,23 @@ class BenchConfig:
     api_key: str = "EMPTY"
     num_requests: int = 32
     max_tokens: int = 256
-    temperature: float = 0.7
+    # None이면 요청에서 아예 제외한다. OpenAI 호환이라도 지원 파라미터는 모델마다
+    # 다르고, 일부 상용 모델은 temperature를 받으면 400을 돌려준다.
+    temperature: float | None = 0.7
     timeout: float = 300.0
     use_usage: bool = False
     prompts: list[str] = field(default_factory=lambda: list(DEFAULT_PROMPTS))
 
 
 async def run_single(client: httpx.AsyncClient, config: BenchConfig, prompt: str) -> RequestResult:
-    payload = {
+    payload: dict = {
         "model": config.model,
         "messages": [{"role": "user", "content": prompt}],
         "max_tokens": config.max_tokens,
-        "temperature": config.temperature,
         "stream": True,
     }
+    if config.temperature is not None:
+        payload["temperature"] = config.temperature
     if config.use_usage:
         payload["stream_options"] = {"include_usage": True}
 
@@ -175,6 +185,41 @@ async def run_load(config: BenchConfig, concurrency: int) -> dict:
     }
 
 
+def _run(cmd: list[str]) -> str | None:
+    """보조 명령을 실행해 첫 줄을 돌려준다. 없으면 None (측정 자체는 계속된다)."""
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if out.returncode != 0:
+        return None
+    line = out.stdout.strip().splitlines()
+    return line[0].strip() if line else None
+
+
+def collect_environment() -> dict:
+    """측정 환경을 자동 수집한다.
+
+    벤치마크 수치는 GPU·드라이버·엔진 버전 없이는 해석도 재현도 불가능하다.
+    사람이 적어 넣는 걸 믿지 않고 결과 JSON에 같이 굽는다.
+    """
+    env: dict = {
+        "python": platform.python_version(),
+        "platform": platform.platform(),
+    }
+    gpu = _run(
+        ["nvidia-smi", "--query-gpu=name,driver_version,memory.total", "--format=csv,noheader"]
+    )
+    if gpu:
+        env["gpu"] = gpu
+    for pkg in ("vllm", "torch"):
+        try:
+            env[pkg] = version(pkg)
+        except PackageNotFoundError:
+            pass
+    return env
+
+
 def print_table(rows: list[dict]) -> None:
     columns = [
         ("concurrency", "동시성"),
@@ -201,7 +246,13 @@ async def main() -> None:
     parser.add_argument("--concurrency", type=int, nargs="+", default=[1, 8, 32])
     parser.add_argument("--max-tokens", type=int, default=256)
     parser.add_argument("--temperature", type=float, default=0.7)
+    parser.add_argument(
+        "--no-temperature",
+        action="store_true",
+        help="요청에서 temperature를 제외한다 (이 파라미터를 거부하는 모델용)",
+    )
     parser.add_argument("--use-usage", action="store_true", help="usage 필드로 정확한 토큰 수 집계")
+    parser.add_argument("--note", default="", help="결과 JSON에 남길 메모 (실험 조건 등)")
     parser.add_argument("--output", help="결과 JSON 저장 경로")
     args = parser.parse_args()
 
@@ -211,12 +262,14 @@ async def main() -> None:
         api_key=args.api_key,
         num_requests=args.num_requests,
         max_tokens=args.max_tokens,
-        temperature=args.temperature,
+        temperature=None if args.no_temperature else args.temperature,
         use_usage=args.use_usage,
     )
 
+    env = collect_environment()
     print(f"대상: {config.base_url} / {config.model}")
     print(f"요청 {config.num_requests}개, max_tokens={config.max_tokens}")
+    print(f"환경: {json.dumps(env, ensure_ascii=False)}")
 
     rows = []
     for concurrency in args.concurrency:
@@ -232,7 +285,11 @@ async def main() -> None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(
             json.dumps(
-                {"config": {k: v for k, v in vars(args).items()}, "results": rows},
+                {
+                    "config": {k: v for k, v in vars(args).items() if k != "api_key"},
+                    "environment": env,
+                    "results": rows,
+                },
                 ensure_ascii=False,
                 indent=2,
             ),

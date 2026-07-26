@@ -13,7 +13,8 @@ venv/
 # 인덱스/산출물
 index/
 *.npy
-benchmarks/results/
+# benchmarks/results/ 는 커밋한다 — 측정 환경(GPU/드라이버/엔진 버전)이 JSON에
+# 함께 기록되므로 결과 자체가 재현 가능한 실험 기록이 된다.
 .pytest_cache/
 .ruff_cache/
 
