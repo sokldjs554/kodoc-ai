@@ -12,6 +12,7 @@ vLLM 위에서 스트리밍으로 답하는 **한국어 특화 문서 질의응�
 
 - **VLM 문서 파싱** — Qwen2.5-VL로 문서 이미지/PDF를 표 구조까지 보존한 마크다운으로 변환
   (`kodoc.parsing`). OCR 다단계 파이프라인 없이 단일 모델 호출로 처리.
+  파싱 모델을 바꿔가며 정답 대조까지 해본 기록은 [docs/vlm-comparison.md](docs/vlm-comparison.md).
 - **한국어 하이브리드 검색** — Kiwi 형태소 분석으로 조사·어미를 제거한 BM25(직접 구현)와
   임베딩 검색을 RRF(Cormack et al., SIGIR 2009)로 융합. 교착어인 한국어에서 어절 단위
   BM25가 무너지는 문제를 실측(어절 hit@1 0.722 → 형태소 1.000)으로 확인하고 해결.
@@ -40,7 +41,8 @@ flowchart LR
 
 설계 결정의 이유와 트레이드오프는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
 추론 최적화 원리 정리는 [docs/inference-optimization.md](docs/inference-optimization.md),
-모델 선정 근거와 검증 절차는 [docs/model-selection.md](docs/model-selection.md) 참고.
+모델 선정 근거와 검증 절차는 [docs/model-selection.md](docs/model-selection.md),
+VLM 파싱 모델 실측 비교는 [docs/vlm-comparison.md](docs/vlm-comparison.md) 참고.
 
 ## 검색 품질 평가
 
