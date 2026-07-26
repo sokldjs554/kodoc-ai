@@ -72,6 +72,9 @@ KoDoc이 LLM에게 요구하는 것은 자유로운 생성이 아니라 **계약
 
 ## 사용
 
+학습·평가 스크립트는 torch/transformers/peft가 필요하다 — `pip install -e ".[finetune]"`.
+설치 자체는 CPU에서도 되고, GPU는 실제 학습을 돌릴 때만 필요하다.
+
 ```bash
 # 1) 데이터 생성 (교사 모델 필요 — KODOC_LLM_* 설정 사용)
 python finetune/build_dataset.py --per-chunk 6

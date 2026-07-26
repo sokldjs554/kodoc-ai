@@ -120,7 +120,9 @@ pip install -e ".[dev,korean]"
 kodoc ingest data/samples/smartfarm_manual.md --index-dir ./index
 kodoc search "양액 EC 적정 범위" --index-dir ./index
 python eval/run_eval.py   # 검색 품질 평가표 출력
-pytest -q                 # 60개 테스트 (LLM 서버 불필요, 전부 오프라인)
+pytest -q                 # 61개 통과 + 7개 건너뜀 (LLM 서버 불필요, 전부 오프라인)
+                          # 건너뛴 것은 파인튜닝 테스트다. 68개 전부 돌리려면
+                          # ".[dev,korean,finetune]" — torch가 붙지만 GPU는 불필요
 ```
 
 ### 2) LLM 연결 — 전체 서비스
@@ -190,7 +192,7 @@ benchmarks/       # 서빙 부하 벤치마크 (TTFT/TPOT/처리량) + 실측 �
 eval/             # 검색 품질 평가 (hit@k, MRR) — 어절/형태소/dense/hybrid 비교
 finetune/         # 작은 모델에 RAG 형식 계약 학습 — 데이터 생성·검증, 규칙 기반 채점
 docs/             # 아키텍처 / 추론 최적화 / 모델 선정 / 실측 분석
-tests/            # 60개 테스트 — 외부 서버·GPU 없이 전부 실행 가능
+tests/            # 68개 테스트 — 외부 서버·GPU 없이 전부 실행 가능
 ```
 
 ## 테스트 철학
