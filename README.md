@@ -23,6 +23,10 @@ vLLM 위에서 스트리밍으로 답하는 **한국어 특화 문서 질의응�
 - **서빙 최적화 도구** — TTFT/TPOT/처리량을 동시성 수준별로 측정하는 부하 벤치마크.
   T4에서 FP16 vs AWQ를 실측해 decode가 메모리 대역폭에 묶인다는 것을 곡선으로 확인
   (배치 16배 증가에도 스텝 시간 불변, [실측 분석](docs/serving-benchmark.md)).
+- **작은 모델에 형식 계약 학습** — 0.5B는 프롬프트만으로 인용·거절 계약을 못 지킨다.
+  교사 모델로 만든 데이터를 규칙 검증으로 거른 뒤 LoRA로 학습해, 인용률 0.17 → 1.00,
+  근거 없는 질문 거절 0.44 → 1.00을 **오거절을 늘리지 않고** 달성
+  ([결과와 해석](docs/finetune-result.md)).
 
 ## 아키텍처
 
@@ -44,7 +48,8 @@ flowchart LR
 추론 최적화 원리 정리는 [docs/inference-optimization.md](docs/inference-optimization.md),
 모델 선정 근거와 검증 절차는 [docs/model-selection.md](docs/model-selection.md),
 VLM 파싱 모델 실측 비교는 [docs/vlm-comparison.md](docs/vlm-comparison.md),
-서빙 벤치마크 실측과 해석은 [docs/serving-benchmark.md](docs/serving-benchmark.md) 참고.
+서빙 벤치마크 실측과 해석은 [docs/serving-benchmark.md](docs/serving-benchmark.md),
+LoRA 파인튜닝 실험 결과는 [docs/finetune-result.md](docs/finetune-result.md) 참고.
 
 ## 검색 품질 평가
 

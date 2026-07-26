@@ -22,6 +22,9 @@ KoDoc이 LLM에게 요구하는 것은 자유로운 생성이 아니라 **계약
 
 학습은 GPU가 필요해 Kaggle 무료 T4에서 수행한다 — 절차는 [`docs/finetune-runbook.md`](../docs/finetune-runbook.md).
 
+**실험 결과와 해석은 [`docs/finetune-result.md`](../docs/finetune-result.md).**
+인용률 0.167 → 1.000, 거절 재현율 0.444 → 1.000, 오거절률 0.053 → 0.026.
+
 ## 설계에서 신경 쓴 것
 
 **교사 출력을 믿지 않는다.** `validate()`가 모든 생성 샘플을 검사한다 — 인용이 있는가,

@@ -1,0 +1,33 @@
+{
+  "label": "lora",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "adapter": "finetune/out/lora",
+  "eval_file": "finetune/data/eval.jsonl",
+  "decoding": "greedy (do_sample=False), max_new_tokens=256",
+  "hardware": "Kaggle Tesla T4",
+  "date": "2026-07-26",
+  "train": {
+    "samples": 187,
+    "answer_tokens_supervised": 6312,
+    "epochs": 3,
+    "lr": 0.0002,
+    "batch_size": 4,
+    "grad_accum": 4,
+    "max_len": 1536,
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "precision": "fp16 (T4는 bf16 미지원)"
+  },
+  "note": "요약만 저장한다. 문항별 상세(samples)는 Kaggle 세션에 남아 있었고 회수하지 않았다.",
+  "summary": {
+    "n_answerable": 38,
+    "n_unanswerable": 9,
+    "n_grounded_scored": 24,
+    "cite_rate": 1.0,
+    "cite_valid_rate": 1.0,
+    "grounded_rate": 0.8333,
+    "false_refusal_rate": 0.0263,
+    "refusal_recall": 1.0
+  }
+}
