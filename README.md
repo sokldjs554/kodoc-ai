@@ -115,7 +115,7 @@ pip install -e ".[dev,korean]"
 kodoc ingest data/samples/smartfarm_manual.md --index-dir ./index
 kodoc search "양액 EC 적정 범위" --index-dir ./index
 python eval/run_eval.py   # 검색 품질 평가표 출력
-pytest -q                 # 56개 테스트 (LLM 서버 불필요, 전부 오프라인)
+pytest -q                 # 60개 테스트 (LLM 서버 불필요, 전부 오프라인)
 ```
 
 ### 2) LLM 연결 — 전체 서비스
@@ -181,10 +181,11 @@ src/kodoc/
 ├── service/      # FastAPI, SSE, 스키마
 ├── pipeline.py   # 인제스트 → 검색 → 생성 오케스트레이션
 └── cli.py        # kodoc ingest/search/serve
-benchmarks/       # 서빙 부하 벤치마크 (TTFT/TPOT/처리량)
+benchmarks/       # 서빙 부하 벤치마크 (TTFT/TPOT/처리량) + 실측 결과
 eval/             # 검색 품질 평가 (hit@k, MRR) — 어절/형태소/dense/hybrid 비교
-docs/             # 아키텍처 / 추론 최적화 / 모델 선정 노트
-tests/            # 56개 테스트 — 외부 서버·GPU 없이 전부 실행 가능
+finetune/         # 작은 모델에 RAG 형식 계약 학습 — 데이터 생성·검증, 규칙 기반 채점
+docs/             # 아키텍처 / 추론 최적화 / 모델 선정 / 실측 분석
+tests/            # 60개 테스트 — 외부 서버·GPU 없이 전부 실행 가능
 ```
 
 ## 테스트 철학
@@ -196,8 +197,9 @@ CI(GitHub Actions)는 Python 3.10/3.11/3.12에서 린트+테스트를 돌립니�
 
 ## 로드맵
 
-- [ ] 평가셋 확장: 패러프레이즈·복합 질의·미근거 질문(unanswerable) 추가 — 현재 평가는
-      스모크 규모이며, 하이브리드/리랭커의 가치 판단은 이 확장이 선행되어야 함
+- [ ] 평가셋 확장: 패러프레이즈·복합 질의 추가 — 현재 검색 평가는 스모크 규모이며,
+      하이브리드/리랭커의 가치 판단은 이 확장이 선행되어야 함
+      (미근거 질문(unanswerable)은 [finetune/](finetune/)의 형식 평가셋에서 일부 확보)
 - [ ] bge-reranker-v2-m3 리랭킹 단계 (RRF top-20 → cross-encoder → top-5)
 - [ ] 답변 인용 검증기 (인용된 청크가 실제 근거인지 NLI로 검증)
 - [ ] 임베딩 별도 서빙(TEI) 분리로 서비스 컨테이너 완전 torch-free화
