@@ -51,7 +51,13 @@ def score_one(answer: str, n_chunks: int, gold: list[str] | None, unanswerable: 
         out["false_refusal"] = refused
         # 근거의 핵심 수치를 그대로 옮겼는가. gold는 교사 답변에 있던 수치이고,
         # 데이터 생성 시 "답변의 모든 수치는 청크에 존재"를 검증했으므로 실재값이다.
-        out["grounded"] = bool(gold) and all(g in answer for g in gold)
+        #
+        # gold가 비었으면(= 답변에 수치가 없는 질문) 이 항목은 **채점하지 않는다**.
+        # 실패로 세면 완벽한 모델도 상한에 막힌다 — 실제로 이 평가셋은 답변가능
+        # 38건 중 14건이 수치 없는 답변이라 상한이 0.63이었다. 물을 수 없는 것을
+        # 틀렸다고 하면 지표가 모델이 아니라 평가셋 구성을 재게 된다.
+        if gold:
+            out["grounded"] = all(g in answer for g in gold)
     return out
 
 
@@ -103,6 +109,9 @@ def summarize(rows: list[dict], results: list[dict]) -> dict:
     return {
         "n_answerable": len(ans),
         "n_unanswerable": len(una),
+        # grounded는 수치가 있는 문항에서만 잰다. 분모를 함께 내보내지 않으면
+        # 몇 건으로 낸 비율인지 알 수 없어 조용한 제외가 된다.
+        "n_grounded_scored": sum(1 for a in ans if "grounded" in a),
         "cite_rate": rate([a for a in ans if not a["refused"]], "has_cite"),
         "cite_valid_rate": rate([a for a in ans if a["has_cite"]], "cite_valid"),
         "grounded_rate": rate(ans, "grounded"),
