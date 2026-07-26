@@ -21,7 +21,8 @@ vLLM 위에서 스트리밍으로 답하는 **한국어 특화 문서 질의응�
 - **스트리밍 서비스** — FastAPI + SSE. 근거(sources)를 첫 이벤트로 선전송한 뒤 토큰을 스트리밍해
   체감 대기시간을 최소화.
 - **서빙 최적화 도구** — TTFT/TPOT/처리량을 동시성 수준별로 측정하는 부하 벤치마크.
-  vLLM/양자화/서버 플래그 비교 실험을 같은 명령으로 반복 가능.
+  T4에서 FP16 vs AWQ를 실측해 decode가 메모리 대역폭에 묶인다는 것을 곡선으로 확인
+  (배치 16배 증가에도 스텝 시간 불변, [실측 분석](docs/serving-benchmark.md)).
 
 ## 아키텍처
 
@@ -42,7 +43,8 @@ flowchart LR
 설계 결정의 이유와 트레이드오프는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
 추론 최적화 원리 정리는 [docs/inference-optimization.md](docs/inference-optimization.md),
 모델 선정 근거와 검증 절차는 [docs/model-selection.md](docs/model-selection.md),
-VLM 파싱 모델 실측 비교는 [docs/vlm-comparison.md](docs/vlm-comparison.md) 참고.
+VLM 파싱 모델 실측 비교는 [docs/vlm-comparison.md](docs/vlm-comparison.md),
+서빙 벤치마크 실측과 해석은 [docs/serving-benchmark.md](docs/serving-benchmark.md) 참고.
 
 ## 검색 품질 평가
 
@@ -77,11 +79,32 @@ python benchmarks/bench_serving.py \
   --num-requests 64 --concurrency 1 8 32 --max-tokens 256
 ```
 
-TTFT(p50/p95), TPOT, tok/s, req/s를 동시성 수준별로 측정합니다. continuous batching의
-효과 확인, FP16 vs AWQ 비교, `--max-model-len` 튜닝 검증 시나리오는
-[benchmarks/README.md](benchmarks/README.md)에 정리했습니다.
-(수치는 GPU/드라이버/vLLM 버전에 종속되므로 저장소에는 측정 방법만 커밋하고,
-결과는 실행 환경 정보와 함께 기록하는 것을 원칙으로 했습니다.)
+TTFT(p50/p95), TPOT, tok/s, req/s를 동시성 수준별로 측정합니다. 결과 JSON에는
+GPU·드라이버·vLLM/torch 버전이 자동으로 함께 기록됩니다 — 환경 정보 없는 벤치마크
+수치는 해석도 재현도 불가능하기 때문입니다.
+
+### 실측 (Tesla T4 / 드라이버 580.159.04 / vLLM 0.26.0 / Qwen2.5-3B)
+
+| 구성 | 동시성 | tok/s | TTFT p50/p95 (ms) | TPOT p50 (ms) |
+|---|---|---|---|---|
+| FP16 | 1 | 27.2 | 45.4 / 79.8 | 37.07 |
+| FP16 | 16 | 326.3 | 134.9 / 149.2 | 35.90 |
+| FP16 | 64 | 1010.8 | 336.6 / 382.5 | 54.46 |
+| AWQ | 1 | 77.6 | 34.7 / 39.7 | **12.76** |
+| AWQ | 16 | 542.9 | 94.1 / 117.0 | 18.34 |
+| AWQ | 64 | 1320.0 | 277.0 / 359.1 | 41.76 |
+
+**FP16에서 배치가 1→16으로 16배 늘어도 스텝 시간은 37.07→35.90ms로 거의 그대로인데
+처리량은 12배가 됩니다.** 스텝마다 가중치를 HBM에서 읽는 비용이 배치 크기와 무관하게
+고정이기 때문입니다 — decode가 메모리 대역폭에 묶여 있다는 것의 직접적인 관측입니다.
+같은 이유로 AWQ의 배치 1 TPOT 개선(2.91배)이 읽는 바이트 수 감소분에 거의 정확히
+비례했고, **동시성이 오를수록 그 이득은 2.91→1.30배로 줄어듭니다.**
+
+측정 전에 세운 가설 3개 중 **1개 확인 · 1개 반증 · 1개 미검증**입니다. 반증된 가설
+(짧은 프롬프트의 prefill도 대역폭 bound다)과 그 함의를 포함한 전체 분석은
+[docs/serving-benchmark.md](docs/serving-benchmark.md), 원본 JSON은
+[benchmarks/results/](benchmarks/results/)에 있습니다.
+실험 시나리오는 [benchmarks/README.md](benchmarks/README.md) 참고.
 
 ## 빠른 시작
 

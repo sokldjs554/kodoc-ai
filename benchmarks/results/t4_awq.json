@@ -1,0 +1,80 @@
+{
+  "config": {
+    "base_url": "http://localhost:8000/v1",
+    "model": "Qwen/Qwen2.5-3B-Instruct-AWQ",
+    "num_requests": 64,
+    "concurrency": [
+      1,
+      4,
+      16,
+      64
+    ],
+    "max_tokens": 256,
+    "temperature": 0.7,
+    "no_temperature": false,
+    "use_usage": true,
+    "note": "Tesla T4 x1, AWQ 4bit, max-model-len 4096, gpu-util 0.90",
+    "output": "benchmarks/results/t4_awq.json"
+  },
+  "environment": {
+    "python": "3.12.13",
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35",
+    "gpu": "Tesla T4, 580.159.04, 15360 MiB",
+    "vllm": "0.26.0",
+    "torch": "2.11.0"
+  },
+  "results": [
+    {
+      "concurrency": 1,
+      "num_ok": 64,
+      "num_failed": 0,
+      "wall_time_s": 186.846,
+      "requests_per_s": 0.343,
+      "output_tok_per_s": 77.6,
+      "ttft_p50_ms": 34.7,
+      "ttft_p95_ms": 39.7,
+      "tpot_p50_ms": 12.76,
+      "latency_p50_s": 3.289,
+      "latency_p95_s": 3.359
+    },
+    {
+      "concurrency": 4,
+      "num_ok": 64,
+      "num_failed": 0,
+      "wall_time_s": 52.384,
+      "requests_per_s": 1.222,
+      "output_tok_per_s": 274.1,
+      "ttft_p50_ms": 44.4,
+      "ttft_p95_ms": 77.1,
+      "tpot_p50_ms": 14.26,
+      "latency_p50_s": 3.679,
+      "latency_p95_s": 3.695
+    },
+    {
+      "concurrency": 16,
+      "num_ok": 64,
+      "num_failed": 0,
+      "wall_time_s": 27.256,
+      "requests_per_s": 2.348,
+      "output_tok_per_s": 542.9,
+      "ttft_p50_ms": 94.1,
+      "ttft_p95_ms": 117.0,
+      "tpot_p50_ms": 18.34,
+      "latency_p50_s": 4.772,
+      "latency_p95_s": 13.341
+    },
+    {
+      "concurrency": 64,
+      "num_ok": 64,
+      "num_failed": 0,
+      "wall_time_s": 10.987,
+      "requests_per_s": 5.825,
+      "output_tok_per_s": 1320.0,
+      "ttft_p50_ms": 277.0,
+      "ttft_p95_ms": 359.1,
+      "tpot_p50_ms": 41.76,
+      "latency_p50_s": 10.962,
+      "latency_p95_s": 10.972
+    }
+  ]
+}
