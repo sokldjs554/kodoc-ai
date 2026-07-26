@@ -23,8 +23,12 @@
 ## 2. 노트북 셀
 
 ```python
-# [1] 설치 — Kaggle 기본 이미지에 torch는 이미 있다
-!pip install -q peft transformers accelerate
+# [1] 설치 — Kaggle 기본 이미지에 torch/transformers/accelerate는 이미 있다.
+# transformers를 올리면 Kaggle에 박힌 옛 torchao(0.10)와 버전 요구가 어긋나
+# ImportError로 죽는다. 양자화를 쓰지 않으므로 torchao는 지우는 쪽이 간단하다.
+!pip uninstall -y -q torchao
+!pip install -q peft
+!python -c "import transformers, peft, torch; print(transformers.__version__, peft.__version__, torch.__version__)"
 
 # [2] 저장소 + 데이터
 !git clone -q https://github.com/sokldjs554/kodoc-ai.git
@@ -90,6 +94,7 @@ for k in base:
 
 | 증상 | 원인 / 대응 |
 |---|---|
+| `incompatible version of torchao` | Kaggle의 torchao(0.10)와 새 transformers의 요구가 어긋난다. `pip uninstall -y torchao` — 양자화를 쓰지 않으므로 지워도 된다 |
 | `bf16 is not supported` | T4에는 bf16이 없다. `--fp16` 경로를 쓰고 있는지 확인 |
 | CUDA OOM | `--batch-size 2 --grad-accum 8`로 낮춘다 (유효 배치는 유지) |
 | 답변이 계속 잘림 | `--max-new-tokens`를 올린다. 다만 계약상 답변은 두 문장이라 256이면 보통 충분 |
