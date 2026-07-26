@@ -17,8 +17,18 @@
 
 정답을 저장소 안 문서로 잡은 것은 의도적이다. 실제 스캔 문서에는 정답이 없어서
 파싱 품질을 수치화할 수 없다. 이미 텍스트로 존재하는 표를 렌더링해 캡처하면
-**바이트 단위 대조가 가능한 정답이 생긴다.** 입력 이미지는 위 표를 화면에
-띄워 캡처한 것이다.
+**바이트 단위 대조가 가능한 정답이 생긴다.**
+
+입력과 출력 원본은 모두 저장소에 있다:
+
+| 파일 | 내용 |
+|---|---|
+| [`data/samples/parsed/scan.png`](../data/samples/parsed/scan.png) | 입력 이미지 (위 표를 화면에 띄워 캡처) |
+| [`data/samples/parsed/scan_haiku45.md`](../data/samples/parsed/scan_haiku45.md) | `claude-haiku-4-5` 출력 |
+| [`data/samples/parsed/scan_sonnet5.md`](../data/samples/parsed/scan_sonnet5.md) | `claude-sonnet-5` 출력 |
+
+`diff benchmarks/README.md의 해당 6줄 data/samples/parsed/scan_sonnet5.md` 가
+차이를 내지 않는 것으로 "완전 일치"를 확인했다.
 
 ## 결과
 
