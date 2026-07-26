@@ -6,6 +6,7 @@ from pathlib import Path
 
 from kodoc.config import Settings, get_settings
 from kodoc.llm.client import LLMClient
+from kodoc.parsing.vlm_parser import VLMDocParser
 from kodoc.pipeline import RAGPipeline
 from kodoc.rag.embedder import create_embedder
 from kodoc.rag.retriever import HybridRetriever
@@ -32,3 +33,14 @@ def build_pipeline(settings: Settings | None = None) -> RAGPipeline:
         timeout=settings.llm_timeout,
     )
     return RAGPipeline(retriever=retriever, llm=llm, settings=settings)
+
+
+def build_vlm_parser(settings: Settings | None = None) -> VLMDocParser:
+    """설정에서 VLM 파서를 만든다. temperature 지원 여부가 모델마다 달라 설정에서 받는다."""
+    settings = settings or get_settings()
+    return VLMDocParser(
+        base_url=settings.vlm_base_url,
+        model=settings.vlm_model,
+        api_key=settings.vlm_api_key,
+        temperature=settings.vlm_temperature,
+    )

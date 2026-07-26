@@ -123,12 +123,10 @@ curl -N -X POST localhost:9000/ask/stream \
 bash scripts/serve_vlm.sh          # vLLM: Qwen2.5-VL-7B-Instruct @ :8001
 python - <<'EOF'
 import asyncio
-from kodoc.config import get_settings
-from kodoc.parsing.vlm_parser import VLMDocParser
+from kodoc.service.deps import build_vlm_parser
 
 async def main():
-    s = get_settings()
-    parser = VLMDocParser(base_url=s.vlm_base_url, model=s.vlm_model)
+    parser = build_vlm_parser()      # 설정에서 base_url/model/key/temperature를 읽는다
     markdown = await parser.parse_image_file("scan.png")
     print(markdown)
     await parser.aclose()

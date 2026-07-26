@@ -46,6 +46,17 @@ async def test_parse_is_deterministic_temperature_zero(parser):
     assert parser._llm.last_temperature == 0.0
 
 
+async def test_temperature_can_be_omitted_for_models_that_reject_it():
+    """temperature를 지원하지 않는 모델(Claude Sonnet 5 등)을 위해 None을 허용한다."""
+    p = VLMDocParser(base_url="http://unused:8001/v1", model="test-vlm", temperature=None)
+    real_client = p._llm
+    p._llm = RecordingLLM()
+    await p.parse_image_bytes(b"img", mime="image/png")
+    # None이면 LLMClient가 payload에서 제외하므로 요청에 temperature가 실리지 않는다
+    assert p._llm.last_temperature is None
+    await real_client.aclose()
+
+
 async def test_parse_image_file_maps_mime_by_suffix(parser, tmp_path: Path):
     path = tmp_path / "scan.jpg"
     path.write_bytes(b"fake jpeg")

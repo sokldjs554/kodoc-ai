@@ -34,9 +34,11 @@ class VLMDocParser:
         model: str,
         api_key: str = "EMPTY",
         max_tokens: int = 4096,
+        temperature: float | None = 0.0,
     ) -> None:
         self._llm = LLMClient(base_url=base_url, model=model, api_key=api_key)
         self._max_tokens = max_tokens
+        self._temperature = temperature
 
     async def aclose(self) -> None:
         await self._llm.aclose()
@@ -52,8 +54,11 @@ class VLMDocParser:
                 ],
             }
         ]
-        # 파싱은 창의성이 필요 없으므로 temperature=0으로 고정한다.
-        return await self._llm.chat(messages, temperature=0.0, max_tokens=self._max_tokens)
+        # 파싱은 창의성이 필요 없으므로 temperature=0이 기본이다. 다만 이 값을 지원하지
+        # 않는 모델이 있어(설정에서 비우면 None) 그때는 요청에서 아예 빠진다.
+        return await self._llm.chat(
+            messages, temperature=self._temperature, max_tokens=self._max_tokens
+        )
 
     async def parse_image_file(self, path: str | Path) -> str:
         path = Path(path)
