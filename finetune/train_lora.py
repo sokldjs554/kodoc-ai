@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -28,6 +29,25 @@ from transformers import (
 )
 
 IGNORE = -100
+
+
+def _as_ids(encoded) -> list[int]:
+    """토크나이저 출력에서 토큰 id 리스트를 꺼낸다.
+
+    `apply_chat_template(tokenize=True)`의 반환형이 버전에 따라 다르다 — 예전에는
+    list[int]였고 최근 transformers는 BatchEncoding을 준다. 배치 차원이 붙어
+    [[...]]로 오는 경우도 있다. 버전을 고정할 수 없는 환경(Kaggle 이미지)에서
+    돌려야 하므로 세 형태를 모두 흡수한다.
+
+    BatchEncoding은 UserDict라서 isinstance(x, dict)로는 안 잡힌다 — Mapping으로 본다.
+    """
+    if isinstance(encoded, Mapping):
+        encoded = encoded["input_ids"]
+    if hasattr(encoded, "tolist"):  # 텐서/ndarray
+        encoded = encoded.tolist()
+    if encoded and isinstance(encoded[0], (list, tuple)):  # 배치 차원 제거
+        encoded = encoded[0]
+    return list(encoded)
 
 
 @dataclass
@@ -53,10 +73,10 @@ class ChatSFTDataset(Dataset):
         answer = next(m["content"] for m in messages if m["role"] == "assistant")
 
         # 추론 시와 같은 템플릿을 써야 학습이 실제 사용 형태와 어긋나지 않는다.
-        prompt_ids = self.tok.apply_chat_template(
-            prompt_msgs, add_generation_prompt=True, tokenize=True
+        prompt_ids = _as_ids(
+            self.tok.apply_chat_template(prompt_msgs, add_generation_prompt=True, tokenize=True)
         )
-        answer_ids = self.tok(answer, add_special_tokens=False)["input_ids"]
+        answer_ids = _as_ids(self.tok(answer, add_special_tokens=False))
         if self.tok.eos_token_id is not None:
             answer_ids = answer_ids + [self.tok.eos_token_id]
 
