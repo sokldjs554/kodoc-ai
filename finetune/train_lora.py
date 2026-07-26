@@ -148,6 +148,22 @@ def main() -> None:
         ],
     )
     model = get_peft_model(model, lora)
+
+    # 학습 대상 파라미터는 fp32여야 한다. AMP(fp16=True)는 옵티마이저 스텝에서
+    # 그래디언트를 unscale하는데 fp16 그래디언트는 unscale할 수 없어 죽는다
+    # ("Attempting to unscale FP16 gradients").
+    #
+    # 최근 peft는 어댑터를 fp32로 만들어 주므로 보통 이 루프는 아무것도 하지 않는다.
+    # 그렇게 해주지 않는 구버전에서만 동작하는 방어다 — Kaggle 이미지의 peft 버전을
+    # 고정할 수 없어 남겨 둔다. 얼어 있는 베이스는 fp16 그대로 둬 메모리를 아낀다.
+    n_cast = 0
+    for param in model.parameters():
+        if param.requires_grad and param.dtype == torch.float16:
+            param.data = param.data.float()
+            n_cast += 1
+    if n_cast:
+        print(f"  학습 파라미터 {n_cast}개를 fp32로 승격 (AMP 요구사항)")
+
     model.print_trainable_parameters()
 
     targs = TrainingArguments(
