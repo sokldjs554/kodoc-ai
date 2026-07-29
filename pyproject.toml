@@ -8,7 +8,6 @@ version = "0.1.0"
 description = "KoDoc — 한국어 문서 이해 RAG 서비스 (VLM 문서 파싱 · 형태소 기반 하이브리드 검색 · vLLM 서빙 최적화)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
 dependencies = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",

@@ -211,7 +211,3 @@ CI(GitHub Actions)는 Python 3.10/3.11/3.12에서 린트+테스트를 돌립니�
 - [ ] 답변 인용 검증기 (인용된 청크가 실제 근거인지 NLI로 검증)
 - [ ] 임베딩 별도 서빙(TEI) 분리로 서비스 컨테이너 완전 torch-free화
 - [ ] vLLM guided decoding 기반 JSON 응답 모드
-
-## 라이선스
-
-MIT
